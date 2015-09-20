@@ -7,19 +7,128 @@ output:
 
 
 ## Loading and preprocessing the data
+*Author: Jonatan Hedin*  
+This report consists of an analysis of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
+We're starting with loading the needed packages, the needed data and transforming the date variable toPOSIXlt format.
 
+We choose to put the data in a data frame as it is the most flexible format.
+
+```{r load data, echo=TRUE}
+library(lattice)
+library(plyr)
+library(xtable)
+library(knitr)
+fileURL="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(fileURL, "activity.zip", mode="wb", method="curl")
+unzip("activity.zip")
+activity <- data.frame(read.csv("activity.csv"))
+activity$date <- strptime(activity$date, format="%Y-%m-%d")
+activity$day <- as.factor(strftime(activity$date, format="%d"))
+```
 
 ## What is mean total number of steps taken per day?
+As this part of the assignment requires us to calculate three daily statistics (step count, step mean, step median) we start by creating a summary data frame containing per day the count, the mean and the median. We use the 'aggregate' function to acheive this.
 
 
+```{r calculate mean, echo=TRUE}
+steps.agg <- aggregate(steps ~ day, data=activity, FUN=function(activity) c(mean =mean(activity), median=median(activity),count=sum(activity) ), na.action = na.omit)
+steps.agg <- data.frame(as.matrix(steps.agg))
+steps.agg$steps.count <- as.numeric(as.character(steps.agg$steps.count))
+```
+
+The mean, median and total number of steps per day:
+```{r kable, results='asis'}
+kable(steps.agg, format="html")
+```  
+
+  
+### A histogram for each day, showing the distribution of steps taken
+
+```{r histogram, fig.height=5}
+histogram(~steps|day, data=activity)
+```
 
 ## What is the average daily activity pattern?
+Here we will group the data by interval instead of by day.
 
+```{r calculate interval, echo=TRUE}
+steps.agg.int <- aggregate(steps ~ interval, data=activity, FUN=function(activity) c(mean =mean(activity), median=median(activity),count=sum(activity) ), na.action = na.omit)
+steps.agg.int <- data.frame(as.matrix(steps.agg.int))
+steps.agg.int$steps.count <- as.numeric(as.character(steps.agg.int$steps.count))
+```
 
+```{r line, fig.height=5}
+plot(steps.agg.int$interval, steps.agg.int$steps.count, type="l", main="Steps per 5 min-interval over total period", xlab="Interval", ylab="Total no. of steps")
+```
+
+### Which 5-minute interval contains max no of steps?
+
+```{r max, echo=TRUE}
+m <-steps.agg.int[which.max(steps.agg.int$steps.count),1]
+print(m)
+```
+The 5-minute interval with the maximum total/average steps is `r m`.
 
 ## Imputing missing values
 
+### Number of rows with NA's
+The number of rows with missing values can be calculated using th is.na() function.
 
+```{r isna, echo=TRUE}
+n.is.na <- sum(is.na(activity$steps))
+print(n.is.na)  
+```  
+ 
+The number of rows with missing steps values is `r n.is.na`.
+
+### Imputing missing values
+We're substituting any NA here with the mean for that day, creating a new dataset called activity2.
+
+```{r imputing, echo=TRUE}
+impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+activity3 <- activity[,-2]
+activity2 <- ddply(activity3, ~ day, transform, steps = impute.mean(steps))
+```
+
+Just like with the original dataset we're calculating summary statistics for each day: Mean, total steps and median.
+
+```{r calculate mean2, echo=TRUE}
+steps.agg2 <- aggregate(steps ~ day, data=activity2, FUN=function(activity2) c(mean =mean(activity2), median=median(activity2),count=sum(activity2) ), na.action = na.omit)
+steps.agg2 <- data.frame(as.matrix(steps.agg2))
+steps.agg2$steps.count <- as.numeric(as.character(steps.agg2$steps.count))
+```
+
+A histogram for each day, showing the distribution of steps taken with imputations made
+
+```{r histogram2, fig.height=5}
+histogram(~steps|day, data=activity2)
+```
+
+
+The mean, median and total number of steps per day with imputations:
+```{r kable2, results='asis'}
+kable(steps.agg2, format="html")
+```  
+
+The clearest difference between the summary statistics of the original aggregate table and the aggregate table after imputed means, is that the total number of steps is higher for each day of the month, and some days of the month has a non-zero median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r weekdays, echo=TRUE}
+activity2 <- cbind(activity2, activity$date)
+colnames(activity2) <- c("steps", "interval", "day", "date")
+activity2$weekdayz <- weekdays(activity2$date)
+activity2$weekend <- activity2$weekdayz
+ 
+levels(activity2$weekend) <-list("weekday" = c("Fredag","Måndag","Onsdag","Tisdag",  "Torsdag"), "weekend"=c("Lördag", "Söndag"))
+
+```  
+
+
+Histogram showing the difference in step pattern weekday vs weekend:
+```{r histogram3, fig.height=5}
+xyplot(steps~interval|weekend, data=activity2)  
+```  
+
+It is obvious that the movement pattern starts later on weekends, and that the movement pattern is more distinct arount mornings, lunch and afternoons on weekdays.
