@@ -1,4 +1,9 @@
-# Reproducible Research: Peer Assessment 1
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
 
 
 ## Loading and preprocessing the data
@@ -241,7 +246,7 @@ kable(steps.agg, format="html")
 histogram(~steps|day, data=activity)
 ```
 
-![](PA1_template_files/figure-html/histogram-1.png) 
+![plot of chunk histogram](figure/histogram-1.png) 
 
 ## What is the average daily activity pattern?
 Here we will group the data by interval instead of by day.
@@ -258,7 +263,7 @@ steps.agg.int$steps.count <- as.numeric(as.character(steps.agg.int$steps.count))
 plot(steps.agg.int$interval, steps.agg.int$steps.count, type="l", main="Steps per 5 min-interval over total period", xlab="Interval", ylab="Total no. of steps")
 ```
 
-![](PA1_template_files/figure-html/line-1.png) 
+![plot of chunk line](figure/line-1.png) 
 
 ### Which 5-minute interval contains max no of steps?
 
@@ -316,7 +321,7 @@ A histogram for each day, showing the distribution of steps taken with imputatio
 histogram(~steps|day, data=activity2)
 ```
 
-![](PA1_template_files/figure-html/histogram2-1.png) 
+![plot of chunk histogram2](figure/histogram2-1.png) 
 
 
 The mean, median and total number of steps per day with imputations:
@@ -528,7 +533,7 @@ activity2 <- cbind(activity2, activity$date)
 colnames(activity2) <- c("steps", "interval", "day", "date")
 activity2$weekdayz <- weekdays(activity2$date)
 activity2$weekend <- activity2$weekdayz
-#levels(activity2$weekend) <- c("weekday", "weekend", "weekday", "weekday", "weekend", #"weekday", "weekday")  
+ 
 levels(activity2$weekend) <-list("weekday" = c("Fredag","Måndag","Onsdag","Tisdag",  "Torsdag"), "weekend"=c("Lördag", "Söndag"))
 ```
 
@@ -539,6 +544,6 @@ Histogram showing the difference in step pattern weekday vs weekend:
 xyplot(steps~interval|weekend, data=activity2)  
 ```
 
-![](PA1_template_files/figure-html/histogram3-1.png) 
+![plot of chunk histogram3](figure/histogram3-1.png) 
 
 It is obvious that the movement pattern starts later on weekends, and that the movement pattern is more distinct arount mornings, lunch and afternoons on weekdays.
